@@ -1,44 +1,18 @@
-from graphene import Scalar, Boolean, Field
-from graphene.types.mutation import MutationOptions, Mutation
-from graphene.types.utils import get_type
-from graphql import Undefined
-from graphql_relay.node.node import from_global_id, to_global_id
-from graphene import relay
-from graphene.relay.id_type import BaseGlobalIDType
+import django.db.models, django.forms
+
 from graphene_django.forms.mutation import DjangoModelFormMutation
 from graphene_django.forms.converter import convert_form_field, get_form_field_description
 from graphene_file_upload.scalars import Upload
-from django import forms
-from collections import OrderedDict
-from functools import partial
+from graphene import Scalar, Boolean, Field
+from graphene.types.mutation import MutationOptions, Mutation
 
-import django.db.models
+from pb_graphene import GlobalID
 
-from graphql.language.ast import (
-    BooleanValueNode,
-    FloatValueNode,
-    IntValueNode,
-    StringValueNode,
-)
+@convert_form_field.register(django.forms.FileField)
+def convert_form_field_to_upload(field):
+    return Upload(description=get_form_field_description(field), required=field.required)
 
-class GlobalID(Scalar):
-    serialize = str
-    parse_value = str
-
-    @staticmethod
-    def parse_literal(ast, _variables=None):
-        if isinstance(ast, IntValueNode):
-            return ast.value
-        
-        elif isinstance(ast, StringValueNode):
-            try:
-                return int(from_global_id(ast.value).id)
-            except:
-                return int(ast.value)
-        
-        return Undefined
-
-def replace_global_ids_with_model_ids(model, data):    
+def _replace_global_ids_with_model_ids(model, data):    
     for field, value in data.items():
         if not hasattr(model, field):
             continue
@@ -50,7 +24,8 @@ def replace_global_ids_with_model_ids(model, data):
 
     return data
 
-def extract_files(model, data, files=None):
+
+def _extract_files(model, data, files=None):
     files = files or {}
     for field, value in dict(data).items():
         if not hasattr(model, field):
@@ -64,10 +39,6 @@ def extract_files(model, data, files=None):
 
     return data, files
 
-@convert_form_field.register(forms.FileField)
-def convert_form_field_to_upload(field):
-    return Upload(description=get_form_field_description(field), required=field.required)
-
 class PlusDjangoModelFormMutation(DjangoModelFormMutation):                
     class Meta:
         abstract = True
@@ -75,7 +46,7 @@ class PlusDjangoModelFormMutation(DjangoModelFormMutation):
     @classmethod
     def get_form_kwargs(cls, root, info, **data):
         data = replace_global_ids_with_model_ids(cls._meta.model, data)
-        data, files = extract_files(cls._meta.model, data)
+        data, files = _extract_files(cls._meta.model, data)
         kwargs = {"data": data, "files": files}
         
         pk = data.pop("id", None)
@@ -85,6 +56,7 @@ class PlusDjangoModelFormMutation(DjangoModelFormMutation):
             kwargs["instance"] = instance
 
         return kwargs
+
 
 class DeleteDjangoModelOptions(MutationOptions):
     model = None  # type: Type[Model]
