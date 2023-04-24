@@ -1,0 +1,4 @@
+Django==4.2
+graphql_relay==3.2.0
+graphene_django==3.0.0
+django-filter==23.1

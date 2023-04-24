@@ -1,0 +1,18 @@
+[project]
+name = "pb-graphene"
+version = "0.0.1"
+authors = [
+  { name="Gaël Pabois" },
+]
+description = "Additional utils to work with graphene, such as file uploads"
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/gpabois/pb-graphene"
+"Bug Tracker" = "https://github.com/pypa/pb-graphene/issues"
